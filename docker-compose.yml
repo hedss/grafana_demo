@@ -1,21 +1,26 @@
 version: "2.1"
 volumes:
   grafana:
+  mythical:
+  postgres:
 services:
+  creatures:
+    build: ./mythical-creatures
+    ports:
+      - "4000:4000"
+      - "80:80"
+    volumes:
+      - "mythical:/mythical"
+    depends_on:
+      - postgres
+  requester:
+    build: ./http-requester
+    depends_on:
+      - creatures
   prometheus:
     build: ./prometheus
     ports:
-      - "9090:9090"
-  promexample:
-    build: ./promexample
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-      - "8082:8082"
-  node-server:
-    build: ./node-server
-    ports:
-      - "4000:4000"
+      - "9090:9090"    
   grafana:
     image: grafana/grafana
     volumes:
@@ -26,3 +31,17 @@ services:
     image: grafana/loki
     ports:
       - "3100:3100"
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: "mythical"
+    volumes:
+      - "postgres:/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"
+  nodeexporter:
+    image: prom/node-exporter
+    privileged: true
+    ports:
+      - "9100:9100"

@@ -39,6 +39,16 @@ scrape_configs:
     scrape_interval: 5s
 
     static_configs:
-      - targets: ['node-server:4000']
+      - targets: ['creatures:4000']
         labels:
-          group: 'nuc-1'
+          group: 'mythical-1'
+
+
+  - job_name: 'node'
+    scrape_interval: 5s
+
+    static_configs:
+      - targets: ['nodeexporter:9100']
+        labels:
+          group: 'mythical-1'
+      
