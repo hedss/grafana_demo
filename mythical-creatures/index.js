@@ -399,11 +399,10 @@ const startServer = async () => {
             port: 5432,
             user: 'postgres',
             password: 'mythical',
-            database: 'beasts'
         });
         
         await pgClient.connect();
-        const results = await pgClient.query("SELECT EXISTS(SELECT datname FROM pg_catalog.pg_database WHERE datname = 'beasts');");
+        const results = await pgClient.query("SELECT COUNT(*) FROM pg_catalog.pg_database WHERE datname = 'beasts';");
         if (results.rows[0].exists === false) {
             logEntry({
                 level: 'info',
