@@ -1,3 +1,4 @@
+const apiObj = require('./tracing')();
 const promClient = require('prom-client');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -5,11 +6,16 @@ const { exec } = require('child_process');
 const request = require('request-promise-native');
 const os = require('os');
 const { Client } = require('pg');
+const { trace } = require('@opentelemetry/api');
 
 // Prometheus
 const app = express();
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
 const register = promClient.register;
+
+// Tracing
+const api = apiObj.api;
+const tracer = apiObj.tracer;
 
 app.use(bodyParser.json());
 
@@ -28,6 +34,7 @@ const logEntry = async (details) => {
         await request(
             {
                 uri: "http://loki:3100/loki/api/v1/push",
+                method: 'POST',
                 headers: {
                     'Content-type': 'application/json'
                 },
@@ -94,12 +101,30 @@ const responseMetric = (details) => {
     responseBucket.observe(details.labels, timeMs);
 };
 
-app.get('/metrics', (req, res) => {
+app.get('/metrics', async (req, res) => {
+    const context = api.context.active();   
+    const { traceId } = api.trace.getSpan(context).spanContext();
+
+    logEntry({
+        level: 'info',
+        job: 'beasts',
+        message: `traceId=${traceId} retrieve prometheus metrics`,
+    });               
+
     res.set('Content-Type', register.contentType);
     res.send(register.metrics());
 });
 
 app.get('/unicorn', async (req, res) => {
+    const context = api.context.active();
+    const { traceId } = api.trace.getSpan(context).spanContext();
+
+    logEntry({
+        level: 'info',
+        job: 'beasts',
+        message: `traceId=${traceId} GET /unicorn`,
+    });               
+
     let metricBody = {
         labels: {
             method: 'GET',
@@ -141,6 +166,15 @@ app.get('/unicorn', async (req, res) => {
 });
 
 app.post('/unicorn', async (req, res) => {
+    const context = api.context.active();
+    const { traceId } = api.trace.getSpan(context).spanContext();
+
+    logEntry({
+        level: 'info',
+        job: 'beasts',
+        message: `traceId=${traceId} POST /unicorn`,
+    });               
+
     let metricBody = {
         labels: {
             method: 'POST',
@@ -192,6 +226,15 @@ app.post('/unicorn', async (req, res) => {
 });
 
 app.delete('/unicorn', async (req, res) => {
+    const context = api.context.active();
+    const { traceId } = api.trace.getSpan(context).spanContext();
+
+    logEntry({
+        level: 'info',
+        job: 'beasts',
+        message: `traceId=${traceId} DELETE /unicorn`,
+    });               
+
     let metricBody = {
         labels: {
             method: 'DELETE',
@@ -243,6 +286,15 @@ app.delete('/unicorn', async (req, res) => {
 });
 
 app.get('/manticore', async (req, res) => {
+    const context = api.context.active();
+    const { traceId } = api.trace.getSpan(context).spanContext();
+
+    logEntry({
+        level: 'info',
+        job: 'beasts',
+        message: `traceId=${traceId} GET /manticore`,
+    });               
+
     let metricBody = {
         labels: {
             method: 'GET',
@@ -284,6 +336,15 @@ app.get('/manticore', async (req, res) => {
 });
 
 app.post('/manticore', async (req, res) => {
+    const context = api.context.active();
+    const { traceId } = api.trace.getSpan(context).spanContext();
+
+    logEntry({
+        level: 'info',
+        job: 'beasts',
+        message: `traceId=${traceId} POST /manticore`,
+    });               
+
     let status = 201
     let metricBody = {
         labels: {
@@ -336,6 +397,15 @@ app.post('/manticore', async (req, res) => {
 });
 
 app.delete('/manticore', async (req, res) => {
+    const context = api.context.active();
+    const { traceId } = api.trace.getSpan(context).spanContext();
+
+    logEntry({
+        level: 'info',
+        job: 'beasts',
+        message: `traceId=${traceId} DELETE s/manticore`,
+    });               
+
     let metricBody = {
         labels: {
             method: 'DELETE',

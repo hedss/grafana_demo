@@ -10,6 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@opentelemetry/api": "^1.0.2",
+    "@opentelemetry/auto-instrumentations-node": "^0.24.0",
+    "@opentelemetry/exporter-jaeger": "^0.24.0",
+    "@opentelemetry/instrumentation": "^0.24.0",
+    "@opentelemetry/node": "^0.24.0",
+    "@opentelemetry/tracing": "^0.24.0",
     "request": "^2.88.2",
     "request-promise-native": "^1.0.8",
     "unique-names-generator": "^4.2.0"

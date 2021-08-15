@@ -1,5 +1,10 @@
+const apiObj = require('./tracing')();
 const request = require('request-promise-native');
 const { uniqueNamesGenerator, adjectives, colors } = require('unique-names-generator');
+
+// Tracing
+const api = apiObj.api;
+const tracer = apiObj.tracer;
 
 // Logging system sends to Loki
 const logEntry = async (details) => {
@@ -8,6 +13,7 @@ const logEntry = async (details) => {
         await request(
             {
                 uri: "http://loki:3100/loki/api/v1/push",
+                method: 'POST',
                 headers: {
                     'Content-type': 'application/json'
                 },
@@ -33,79 +39,96 @@ const logEntry = async (details) => {
 };
 
 // We just keep going, requesting names and adding them
-const makeRequest = async () => {
+const makeRequest = async () => {    
     const type = (Math.floor(Math.random() * 100) < 50) ? 'GET' : 'POST';
     const beast = (Math.floor(Math.random() * 100) < 75) ? 'unicorn' : 'manticore';
 
-    if (type === 'GET') {
-        try {
-            const result = await request({
-                method: 'GET',
-                uri: `http://creatures:4000/${beast}`,
-            });
-            logEntry({
-                level: 'info',
-                job: 'requester',
-                message: `Beast names retrieved for ${beast}`,
-            });
-            const names = JSON.parse(result);
+    const parentSpan = tracer.startSpan("http_requester");
+    const { traceId } = parentSpan.spanContext();
 
-            // Delete more manticores than Unicorns
-            let delProb;
-            if (beast === 'unicorn') {
-                delProb = 50;
-            } else {
-                delProb = 70;
-            }
-            if (Math.floor(Math.random() * 100) < delProb) {
-                if (result.length > 0) {
-                    await request({
-                        method: 'DELETE',
-                        uri: `http://creatures:4000/${beast}`,
-                        json: true,
-                        body: { name: names[0].name },
-                    });
-                    logEntry({
-                        level: 'info',
-                        job: 'requester',
-                        message: `Beast name ${result[0]} deleted for ${beast}`,
-                    });
+    api.context.with(api.trace.setSpan(api.context.active(), parentSpan), async () => {
+        const headers = {};
+
+        logEntry({
+            level: 'info',
+            job: 'requester',
+            message: `traceId=${traceId} make request for: ${type} /${beast}`,
+        });
+
+        if (type === 'GET') {
+            try {
+                const result = await request({
+                    method: 'GET',
+                    uri: `http://creatures:4000/${beast}`,
+                    headers
+                });
+                logEntry({
+                    level: 'info',
+                    job: 'requester',
+                    message: `Beast names retrieved for ${beast}`,
+                });
+                const names = JSON.parse(result);
+
+                // Delete more manticores than Unicorns
+                let delProb;
+                if (beast === 'unicorn') {
+                    delProb = 50;
+                } else {
+                    delProb = 70;
                 }
-            }
-        } catch (err) {
-            logEntry({
-                level: 'error',
-                job: 'requester',
-                message: `Error in request to mythical beasts server: ${err}`,
-            });                        
-            console.log('Requester error');
-        }        
-    } else {
-        // Generate new name
-        const randomName = uniqueNamesGenerator({ dictionaries: [adjectives, colors, adjectives] });
-        const body = (Math.random() < 0.1) ? { whoops: "yes" } : { name : randomName };
+                if (Math.floor(Math.random() * 100) < delProb) {
+                    if (names.length > 0) {
+                        await request({
+                            method: 'DELETE',
+                            uri: `http://creatures:4000/${beast}`,
+                            json: true,
+                            headers,
+                            body: { name: names[0].name },
+                        });
+                        logEntry({
+                            level: 'info',
+                            job: 'requester',
+                            message: `Beast name ${names[0].name} deleted for ${beast}`,
+                        });
+                    }
+                }
+            } catch (err) {
+                logEntry({
+                    level: 'error',
+                    job: 'requester',
+                    message: `Error in request to mythical beasts server: ${err}`,
+                });                        
+                console.log('Requester error');
+            }        
+        } else {
+            // Generate new name
+            const randomName = uniqueNamesGenerator({ dictionaries: [adjectives, colors, adjectives] });
+            const body = (Math.random() < 0.1) ? { whoops: "yes" } : { name : randomName };
 
-        try {
-            await request({
-                method: 'POST',
-                uri: `http://creatures:4000/${beast}`,
-                json: true,
-                body,
-            });
-            logEntry({
-                level: 'info',
-                job: 'requester',
-                message: `Beast name pushed for ${beast}`,
-            });                        
-        } catch (err) {
-            logEntry({
-                level: 'error',
-                job: 'requester',
-                message: `Error in request to mythical beasts server: ${err}`,
-            });                        
-            console.log('Requester error');
+            try {
+                await request({
+                    method: 'POST',
+                    uri: `http://creatures:4000/${beast}`,
+                    json: true,
+                    headers,
+                    body,
+                });
+                logEntry({
+                    level: 'info',
+                    job: 'requester',
+                    message: `Beast name pushed for ${beast}`,
+                });                        
+            } catch (err) {
+                logEntry({
+                    level: 'error',
+                    job: 'requester',
+                    message: `Error in request to mythical beasts server: ${err}`,
+                });                        
+                console.log('Requester error');
+            }
         }
-    }
+        parentSpan.end();
+    });
 
     // Sometime in the next two seconds, but larger than 100ms
     const nextReqIn = (Math.random() * 1000) + 100;

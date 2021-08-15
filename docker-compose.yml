@@ -45,3 +45,10 @@ services:
     privileged: true
     ports:
       - "9100:9100"
+  tempo:
+    image: grafana/tempo
+    ports:
+      - "6832:6832"
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml
