@@ -119,12 +119,6 @@ app.get('/unicorn', async (req, res) => {
     const context = api.context.active();
     const { traceId } = api.trace.getSpan(context).spanContext();
 
-    logEntry({
-        level: 'info',
-        job: 'beasts',
-        message: `traceId=${traceId} GET /unicorn`,
-    });               
-
     let metricBody = {
         labels: {
             method: 'GET',
@@ -147,9 +141,9 @@ app.get('/unicorn', async (req, res) => {
         logEntry({
             level: 'info',
             job: 'beasts',
-            message: 'Unicorn GET complete',
+            message: `traceId=${traceId} GET /unicorn`,
         });               
-
+    
         res.send(results);
     } catch (err) {
         metricBody.status = "500";
@@ -158,7 +152,7 @@ app.get('/unicorn', async (req, res) => {
         logEntry({
             level: 'error',
             job: 'beasts',
-            message: `Unicorn GET error: ${err}`,
+            message: `traceId=${traceId} Unicorn GET error: ${err}`,
         });            
 
         res.status(500).send(err);
@@ -229,12 +223,6 @@ app.delete('/unicorn', async (req, res) => {
     const context = api.context.active();
     const { traceId } = api.trace.getSpan(context).spanContext();
 
-    logEntry({
-        level: 'info',
-        job: 'beasts',
-        message: `traceId=${traceId} DELETE /unicorn`,
-    });               
-
     let metricBody = {
         labels: {
             method: 'DELETE',
@@ -262,13 +250,13 @@ app.delete('/unicorn', async (req, res) => {
         metricBody.status = "204";
         responseMetric(metricBody);
 
+        res.sendStatus(204);
+
         logEntry({
             level: 'info',
             job: 'beasts',
-            message: 'Unicorn DELETE complete',
-        });               
-
-        res.sendStatus(204);
+            message: `traceId=${traceId} latency=${Date.now() - metricBody.start} DELETE /unicorn`,
+        });                   
     } catch (err) {
         // Metrics
         console.log(`error: ${err}`);

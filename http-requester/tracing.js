@@ -11,8 +11,8 @@ const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventi
 module.exports = () => {
   const options = {
     tags: [],
-    host: 'otel-collector',
-    port: 6832,
+    host: 'agent',
+    port: 6833,
     maxPacketSize: 65000
   }
 

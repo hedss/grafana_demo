@@ -25,7 +25,7 @@ services:
     image: grafana/grafana
     volumes:
       - "grafana:/var/lib/grafana"
-      - "${PWD}/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml"
+      - "${PWD}/grafana/provisioning:/etc/grafana/provisioning/datasources"
     ports:
       - "3000:3000"
   loki:
@@ -47,8 +47,9 @@ services:
     ports:
       - "9100:9100"
   tempo:
-    image: grafana/tempo
+    image: grafana/tempo:latest
     ports:
+      - "3200:3200"
       - "4317:4317"
       - "55680:55680"
       - "55681:55681"
@@ -56,10 +57,11 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./tempo/tempo.yaml:/etc/tempo.yaml
-  otel-collector:
-    image: otel/opentelemetry-collector
+  agent:
+    image: grafana/agent:latest
     ports:
+      - "12345:80"
       - "6832:6832"
       - "55679:55679"
     volumes:
-      - "${PWD}/otel/config.yaml:/etc/otel/config.yaml"
+      - "${PWD}/agent/config.yaml:/etc/agent/agent.yaml"
