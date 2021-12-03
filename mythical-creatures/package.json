@@ -26,6 +26,6 @@
     "prom-client": "^11.5.3",
     "random": "^2.1.1",
     "request": "^2.88.0",
-    "request-promise-native": "^1.0.8"
+    "request-promise-native": "^1.0.9"
   }
 }
