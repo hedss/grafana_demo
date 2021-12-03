@@ -12,7 +12,7 @@ module.exports = () => {
   const options = {
     tags: [],
     host: 'agent',
-    port: 6833,
+    port: 6832,
     maxPacketSize: 65000
   }
 

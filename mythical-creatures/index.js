@@ -92,7 +92,7 @@ const databaseAction = async (action) => {
         level: 'error',
         job: 'beasts',
         message: 'Method was not valid, throwing error',
-    });                
+    });
     throw new Error('Not a valid creature method!')
 }
 
@@ -102,14 +102,14 @@ const responseMetric = (details) => {
 };
 
 app.get('/metrics', async (req, res) => {
-    const context = api.context.active();   
+    const context = api.context.active();
     const { traceId } = api.trace.getSpan(context).spanContext();
 
     logEntry({
         level: 'info',
         job: 'beasts',
         message: `traceId=${traceId} retrieve prometheus metrics`,
-    });               
+    });
 
     res.set('Content-Type', register.contentType);
     res.send(register.metrics());
@@ -118,6 +118,7 @@ app.get('/metrics', async (req, res) => {
 app.get('/unicorn', async (req, res) => {
     const context = api.context.active();
     const { traceId } = api.trace.getSpan(context).spanContext();
+
 
     let metricBody = {
         labels: {
@@ -142,8 +143,8 @@ app.get('/unicorn', async (req, res) => {
             level: 'info',
             job: 'beasts',
             message: `traceId=${traceId} GET /unicorn`,
-        });               
-    
+        });
+
         res.send(results);
     } catch (err) {
         metricBody.status = "500";
@@ -153,7 +154,7 @@ app.get('/unicorn', async (req, res) => {
             level: 'error',
             job: 'beasts',
             message: `traceId=${traceId} Unicorn GET error: ${err}`,
-        });            
+        });
 
         res.status(500).send(err);
     }
@@ -167,7 +168,7 @@ app.post('/unicorn', async (req, res) => {
         level: 'info',
         job: 'beasts',
         message: `traceId=${traceId} POST /unicorn`,
-    });               
+    });
 
     let metricBody = {
         labels: {
@@ -200,7 +201,7 @@ app.post('/unicorn', async (req, res) => {
             level: 'info',
             job: 'beasts',
             message: 'Unicorn POST complete',
-        });               
+        });
 
         res.sendStatus(201);
     } catch (err) {
@@ -213,7 +214,7 @@ app.post('/unicorn', async (req, res) => {
             level: 'error',
             job: 'beasts',
             message: `Unicorn POST error: ${err}`,
-        });            
+        });
 
         res.status(500).send(err);
     }
@@ -256,7 +257,7 @@ app.delete('/unicorn', async (req, res) => {
             level: 'info',
             job: 'beasts',
             message: `traceId=${traceId} latency=${Date.now() - metricBody.start} DELETE /unicorn`,
-        });                   
+        });
     } catch (err) {
         // Metrics
         console.log(`error: ${err}`);
@@ -267,7 +268,7 @@ app.delete('/unicorn', async (req, res) => {
             level: 'error',
             job: 'beasts',
             message: `Unicorn DELETE error: ${err}`,
-        });            
+        });
 
         res.status(500).send(err);
     }
@@ -281,7 +282,7 @@ app.get('/manticore', async (req, res) => {
         level: 'info',
         job: 'beasts',
         message: `traceId=${traceId} GET /manticore`,
-    });               
+    });
 
     let metricBody = {
         labels: {
@@ -306,7 +307,7 @@ app.get('/manticore', async (req, res) => {
             level: 'info',
             job: 'beasts',
             message: 'Manticore GET complete',
-        });               
+        });
 
         res.send(results);
     } catch (err) {
@@ -317,7 +318,7 @@ app.get('/manticore', async (req, res) => {
             level: 'error',
             job: 'beasts',
             message: `Manticore GET error: ${err}`,
-        });            
+        });
 
         res.status(500).send(err);
     }
@@ -331,7 +332,7 @@ app.post('/manticore', async (req, res) => {
         level: 'info',
         job: 'beasts',
         message: `traceId=${traceId} POST /manticore`,
-    });               
+    });
 
     let status = 201
     let metricBody = {
@@ -365,7 +366,7 @@ app.post('/manticore', async (req, res) => {
             level: 'info',
             job: 'beasts',
             message: 'Manticore POST complete',
-        });               
+        });
 
         res.sendStatus(201);
     } catch (err) {
@@ -378,7 +379,7 @@ app.post('/manticore', async (req, res) => {
             level: 'error',
             job: 'beasts',
             message: `Manticore POST error: ${err}`,
-        });            
+        });
 
         res.status(500).send(err);
     }
@@ -392,7 +393,7 @@ app.delete('/manticore', async (req, res) => {
         level: 'info',
         job: 'beasts',
         message: `traceId=${traceId} DELETE s/manticore`,
-    });               
+    });
 
     let metricBody = {
         labels: {
@@ -425,7 +426,7 @@ app.delete('/manticore', async (req, res) => {
             level: 'info',
             job: 'beasts',
             message: 'Manticore DELETE complete',
-        });               
+        });
 
         res.sendStatus(204);
     } catch (err) {
@@ -438,7 +439,7 @@ app.delete('/manticore', async (req, res) => {
             level: 'error',
             job: 'beasts',
             message: `Manticore DELETE error: ${err}`,
-        });            
+        });
 
         res.status(500).send(err);
     }
@@ -451,14 +452,14 @@ const startServer = async () => {
             level: 'info',
             job: 'beasts',
             message: 'Installing postgres client...',
-        });        
+        });
         pgClient = new Client({
             host: 'postgres',
             port: 5432,
             user: 'postgres',
             password: 'mythical',
         });
-        
+
         await pgClient.connect();
         const results = await pgClient.query("SELECT COUNT(*) FROM pg_catalog.pg_database WHERE datname = 'beasts';");
         if (results.rows[0].exists === false) {
@@ -466,7 +467,7 @@ const startServer = async () => {
                 level: 'info',
                 job: 'beasts',
                 message: 'Database entry did not exist, creating...',
-            });            
+            });
             console.log('Creating database...');
             await pgClient.query('CREATE DATABASE beasts');
         }
@@ -475,7 +476,7 @@ const startServer = async () => {
             level: 'info',
             job: 'beasts',
             message: 'Creating tables...',
-        });                    
+        });
         await pgClient.query('CREATE TABLE IF NOT EXISTS unicorns(id serial PRIMARY KEY, name VARCHAR (50) UNIQUE NOT NULL);');
         await pgClient.query('CREATE TABLE IF NOT EXISTS manticores(id serial PRIMARY KEY, name VARCHAR (50) UNIQUE NOT NULL);');
 
@@ -484,13 +485,13 @@ const startServer = async () => {
             level: 'info',
             job: 'beasts',
             message: 'Beasts server up and running...',
-        });            
+        });
     } catch (err) {
         logEntry({
             level: 'info',
             job: 'beasts',
             message: 'Beasts server could not start, trying again in 5 seconds...',
-        });            
+        });
         setTimeout(() => startServer(), 5000);
     }
 };
