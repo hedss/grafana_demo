@@ -1,58 +1,39 @@
-const apiObj = require('./tracing')();
+const tracingUtils = require('./tracing')();
+const { api, tracer, propagator } = tracingUtils;
 const request = require('request-promise-native');
 const { uniqueNamesGenerator, adjectives, colors } = require('unique-names-generator');
+const logEntry = require('./logging');
 
-// Tracing
-const api = apiObj.api;
-const tracer = apiObj.tracer;
-
-// Logging system sends to Loki
-const logEntry = async (details) => {
-    const { message, level, job } = details;
-    try {
-        await request(
-            {
-                uri: "http://loki:3100/loki/api/v1/push",
-                method: 'POST',
-                headers: {
-                    'Content-type': 'application/json'
-                },
-                json: true,
-                body: {
-                    'streams': [
-                        {
-                            'stream': {
-                                'level': level,
-                                'job': job,
-                            },
-                            'values': [
-                                [ `${Date.now() * 1000000}`, message ]
-                            ]
-                        }
-                    ]
-                }
-            },
-        );
-    } catch (err) {
-        console.log(`Logging error: ${err}`);
-    }
-};
+const beasts = [
+    'unicorn',
+    'manticore',
+    'illithid',
+    'owlbear',
+    'beholder',
+];
 
 // We just keep going, requesting names and adding them
-const makeRequest = async () => {    
+const makeRequest = async () => {
     const type = (Math.floor(Math.random() * 100) < 50) ? 'GET' : 'POST';
-    const beast = (Math.floor(Math.random() * 100) < 75) ? 'unicorn' : 'manticore';
+    const index = Math.floor(Math.random() * beasts.length);
+    const beast = beasts[index];
+    let headers = {};
+    let error = false;
 
-    const parentSpan = tracer.startSpan("http_requester");
-    const { traceId } = parentSpan.spanContext();
+    // Create a new span
+    const requestSpan = tracer.startSpan("requester");
+    requestSpan.setAttribute('creature.type', beast);
+    const { traceId } = requestSpan.spanContext();
 
-    api.context.with(api.trace.setSpan(api.context.active(), parentSpan), async () => {
-        const headers = {};
+    // Create a new context for this request
+    api.context.with(api.trace.setSpan(api.context.active(), requestSpan), async () => {
+        // Add the headers required for trace propagation
+        headers = propagator(requestSpan);
 
         logEntry({
             level: 'info',
             job: 'requester',
-            message: `traceId=${traceId} make request for: ${type} /${beast}`,
+            message: `traceID=${traceId} make request for: ${type} /${beast}`,
         });
 
         if (type === 'GET') {
@@ -65,17 +46,12 @@ const makeRequest = async () => {
                 logEntry({
                     level: 'info',
                     job: 'requester',
-                    message: `Beast names retrieved for ${beast}`,
+                    message: `traceID=${traceId} Beast names retrieved for ${beast}`,
                 });
                 const names = JSON.parse(result);
 
-                // Delete more manticores than Unicorns
-                let delProb;
-                if (beast === 'unicorn') {
-                    delProb = 50;
-                } else {
-                    delProb = 70;
-                }
+                // Deletion probabilty is based on the array index.
+                let delProb = (index / beasts.length) * 100;
                 if (Math.floor(Math.random() * 100) < delProb) {
                     if (names.length > 0) {
                         await request({
@@ -88,7 +64,7 @@ const makeRequest = async () => {
                         logEntry({
                             level: 'info',
                             job: 'requester',
-                            message: `Beast name ${names[0].name} deleted for ${beast}`,
+                            message: `traceID=${traceId} Beast name ${names[0].name} deleted for ${beast}`,
                         });
                     }
                 }
@@ -96,10 +72,11 @@ const makeRequest = async () => {
                 logEntry({
                     level: 'error',
                     job: 'requester',
-                    message: `Error in request to mythical beasts server: ${err}`,
-                });                        
+                    message: `traceID=${traceId} Error in request to mythical beasts server: ${err}`,
+                });
                 console.log('Requester error');
-            }        
+                error = true;
+            }
         } else {
             // Generate new name
             const randomName = uniqueNamesGenerator({ dictionaries: [adjectives, colors, adjectives] });
@@ -116,18 +93,21 @@ const makeRequest = async () => {
                 logEntry({
                     level: 'info',
                     job: 'requester',
-                    message: `Beast name pushed for ${beast}`,
-                });                        
+                    message: `traceID=${traceId} Beast name pushed for ${beast}`,
+                });
             } catch (err) {
                 logEntry({
                     level: 'error',
                     job: 'requester',
-                    message: `Error in request to mythical beasts server: ${err}`,
-                });                        
+                    message: `traceID=${traceId}  Error in request to mythical beasts server: ${err}`,
+                });
                 console.log('Requester error');
+                error = true;
             }
         }
-        parentSpan.end();
+        // Set the status code as OK and end the span
+        requestSpan.setStatus({ code: (!error) ? api.SpanStatusCode.OK : api.SpanStatusCode.ERROR });
+        requestSpan.end();
     });
 
     // Sometime in the next two seconds, but larger than 100ms

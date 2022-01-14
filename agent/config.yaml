@@ -26,3 +26,11 @@ traces:
         - name: http.method
         - name: http.target
       handler_endpoint: 0.0.0.0:1234
+    automatic_logging:
+      backend: logs_instance
+      logs_instance_name: loki
+      roots: true
+      processes: false
+      spans: false
+      overrides:
+        trace_id_key: "traceId"

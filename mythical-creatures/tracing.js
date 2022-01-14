@@ -1,7 +1,7 @@
-// Include all deps
+// Include all OpenTelemetry dependencies for tracing
 const api = require("@opentelemetry/api");
-const { NodeTracerProvider } = require("@opentelemetry/node");
-const { SimpleSpanProcessor } = require("@opentelemetry/tracing");
+const { NodeTracerProvider } = require("@opentelemetry/sdk-trace-node");
+const { SimpleSpanProcessor } = require("@opentelemetry/sdk-trace-base");
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
 const { registerInstrumentations } = require('@opentelemetry/instrumentation');
 const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');

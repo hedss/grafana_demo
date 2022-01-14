@@ -1,24 +1,17 @@
-const apiObj = require('./tracing')();
+require('./tracing')();
 const promClient = require('prom-client');
 const express = require('express');
 const bodyParser = require('body-parser');
-const { exec } = require('child_process');
-const request = require('request-promise-native');
-const os = require('os');
 const { Client } = require('pg');
-const { trace } = require('@opentelemetry/api');
+const logEntry = require('./logging');
 
 // Prometheus
 const app = express();
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
 const register = promClient.register;
 
-// Tracing
-const api = apiObj.api;
-const tracer = apiObj.tracer;
-
+// Use JSON parsing in the request body
 app.use(bodyParser.json());
-
 let pgClient;
 
 const Database = {
@@ -27,37 +20,13 @@ const Database = {
     DELETE: 2,
 };
 
-// Logging system sends to Loki
-const logEntry = async (details) => {
-    const { message, level, job } = details;
-    try {
-        await request(
-            {
-                uri: "http://loki:3100/loki/api/v1/push",
-                method: 'POST',
-                headers: {
-                    'Content-type': 'application/json'
-                },
-                json: true,
-                body: {
-                    'streams': [
-                        {
-                            'stream': {
-                                'level': level,
-                                'job': job,
-                            },
-                            'values': [
-                                [ `${Date.now() * 1000000}`, message ]
-                            ]
-                        }
-                    ]
-                }
-            },
-        );
-    } catch (err) {
-        console.log(`Logging error: ${err}`);
-    }
-};
+const beasts = [
+    'unicorn',
+    'manticore',
+    'illithid',
+    'owlbear',
+    'beholder',
+];
 
 // Total number of requests made
 const requestCounter = new promClient.Counter({
@@ -75,17 +44,13 @@ const responseBucket = new promClient.Histogram({
 });
 
 const databaseAction = async (action) => {
-    const table = (action.table === 'unicorns') ? 'unicorns' : 'manticores';
     if (action.method === Database.GET) {
-        const statement = `SELECT name from ${table}`;
-        const results = await pgClient.query(statement);
+        const results = await pgClient.query(`SELECT name from ${action.table}`);
         return results.rows;
     } else if (action.method === Database.ADD) {
-        const statement = `INSERT INTO ${table}(name) VALUES ('${action.name}')`;
-        return await pgClient.query(statement);
+        return await pgClient.query(`INSERT INTO ${action.table}(name) VALUES ($1)`, [ action.name ]);
     } else if (action.method === Database.DELETE) {
-        const statement = `DELETE FROM ${table} WHERE name = '${action.name}'`;
-        return await pgClient.query(statement);
+        return await pgClient.query(`DELETE FROM ${action.table} WHERE name = $1`, [ action.name ]);
     }
 
     logEntry({
@@ -102,28 +67,25 @@ const responseMetric = (details) => {
 };
 
 app.get('/metrics', async (req, res) => {
-    const context = api.context.active();
-    const { traceId } = api.trace.getSpan(context).spanContext();
-
-    logEntry({
-        level: 'info',
-        job: 'beasts',
-        message: `traceId=${traceId} retrieve prometheus metrics`,
-    });
-
     res.set('Content-Type', register.contentType);
     res.send(register.metrics());
 });
 
-app.get('/unicorn', async (req, res) => {
-    const context = api.context.active();
-    const { traceId } = api.trace.getSpan(context).spanContext();
-
+// Generic GET endpoint
+app.get('/:beast', async (req, res) => {
+    const beast = req.params.beast;
+    if (!beasts.includes(beast)) {
+        res.status(404).send(`${beast} is not a valid beast`);
+        metricBody.status = "404";
+        responseMetric(metricBody);
+        console.log("INVALID BEAST!")
+        return;
+    }
 
     let metricBody = {
         labels: {
             method: 'GET',
-            beast: 'unicorn',
+            beast,
         },
         start: Date.now(),
     };
@@ -132,7 +94,7 @@ app.get('/unicorn', async (req, res) => {
     try {
         const results = await databaseAction({
             method: Database.GET,
-            table: 'unicorns',
+            table: beast,
         });
 
         // Metrics
@@ -142,7 +104,7 @@ app.get('/unicorn', async (req, res) => {
         logEntry({
             level: 'info',
             job: 'beasts',
-            message: `traceId=${traceId} GET /unicorn`,
+            message: `${beast} GET complete`,
         });
 
         res.send(results);
@@ -153,192 +115,28 @@ app.get('/unicorn', async (req, res) => {
         logEntry({
             level: 'error',
             job: 'beasts',
-            message: `traceId=${traceId} Unicorn GET error: ${err}`,
+            message: `${beast} GET error: ${err}`,
         });
 
         res.status(500).send(err);
     }
 });
 
-app.post('/unicorn', async (req, res) => {
-    const context = api.context.active();
-    const { traceId } = api.trace.getSpan(context).spanContext();
-
-    logEntry({
-        level: 'info',
-        job: 'beasts',
-        message: `traceId=${traceId} POST /unicorn`,
-    });
-
-    let metricBody = {
-        labels: {
-            method: 'POST',
-            beast: 'unicorn',
-        },
-        start: Date.now(),
-    };
-
-    if (!req.body || !req.body.name) {
-        // Here we'd use 'respondToCall()' which would add a metric for the response
-        // code
-        metricBody.status = "400";
+// Generic POST endpoint
+app.post('/:beast', async (req, res) => {
+    const beast = req.params.beast;
+    if (!beasts.includes(beast)) {
+        res.status(404).send(`${beast} is not a valid beast`);
+        metricBody.status = "404";
         responseMetric(metricBody);
+        return;
     }
-
-    // Add a new unicorn name
-    try {
-        await databaseAction({
-            method: Database.ADD,
-            table: 'unicorns',
-            name: req.body.name,
-        });
-
-        // Metrics
-        metricBody.status = "201";
-        responseMetric(metricBody);
-
-        logEntry({
-            level: 'info',
-            job: 'beasts',
-            message: 'Unicorn POST complete',
-        });
-
-        res.sendStatus(201);
-    } catch (err) {
-        // Metrics
-        console.log(`error: ${err}`);
-        metricBody.status = "500";
-        responseMetric(metricBody);
-
-        logEntry({
-            level: 'error',
-            job: 'beasts',
-            message: `Unicorn POST error: ${err}`,
-        });
-
-        res.status(500).send(err);
-    }
-});
-
-app.delete('/unicorn', async (req, res) => {
-    const context = api.context.active();
-    const { traceId } = api.trace.getSpan(context).spanContext();
-
-    let metricBody = {
-        labels: {
-            method: 'DELETE',
-            beast: 'unicorn',
-        },
-        start: Date.now(),
-    };
-
-    if (!req.body || !req.body.name) {
-        // Here we'd use 'respondToCall()' which would add a metric for the response
-        // code
-        metricBody.status = "400";
-        responseMetric(metricBody);
-    }
-
-    // Delete a unicorn name
-    try {
-        await databaseAction({
-            method: Database.DELETE,
-            table: 'unicorns',
-            name: req.body.name,
-        });
-
-        // Metrics
-        metricBody.status = "204";
-        responseMetric(metricBody);
-
-        res.sendStatus(204);
-
-        logEntry({
-            level: 'info',
-            job: 'beasts',
-            message: `traceId=${traceId} latency=${Date.now() - metricBody.start} DELETE /unicorn`,
-        });
-    } catch (err) {
-        // Metrics
-        console.log(`error: ${err}`);
-        metricBody.status = "500";
-        responseMetric(metricBody);
-
-        logEntry({
-            level: 'error',
-            job: 'beasts',
-            message: `Unicorn DELETE error: ${err}`,
-        });
-
-        res.status(500).send(err);
-    }
-});
-
-app.get('/manticore', async (req, res) => {
-    const context = api.context.active();
-    const { traceId } = api.trace.getSpan(context).spanContext();
-
-    logEntry({
-        level: 'info',
-        job: 'beasts',
-        message: `traceId=${traceId} GET /manticore`,
-    });
-
-    let metricBody = {
-        labels: {
-            method: 'GET',
-            beast: 'manticore',
-        },
-        start: Date.now(),
-    };
-
-    // Retrieve all the Unicorn names
-    try {
-        const results = await databaseAction({
-            method: Database.GET,
-            table: 'manticores',
-        });
-
-        // Metrics
-        metricBody.status = "200";
-        responseMetric(metricBody);
-
-        logEntry({
-            level: 'info',
-            job: 'beasts',
-            message: 'Manticore GET complete',
-        });
-
-        res.send(results);
-    } catch (err) {
-        metricBody.status = "500";
-        responseMetric(metricBody);
-
-        logEntry({
-            level: 'error',
-            job: 'beasts',
-            message: `Manticore GET error: ${err}`,
-        });
-
-        res.status(500).send(err);
-    }
-});
-
-app.post('/manticore', async (req, res) => {
-    const context = api.context.active();
-    const { traceId } = api.trace.getSpan(context).spanContext();
-
-    logEntry({
-        level: 'info',
-        job: 'beasts',
-        message: `traceId=${traceId} POST /manticore`,
-    });
 
     let status = 201
     let metricBody = {
         labels: {
             method: 'POST',
-            beast: 'manticore',
+            beast,
         },
         start: Date.now(),
     };
@@ -354,7 +152,7 @@ app.post('/manticore', async (req, res) => {
     try {
         await databaseAction({
             method: Database.ADD,
-            table: 'manticores',
+            table: beast,
             name: req.body.name,
         });
 
@@ -365,7 +163,7 @@ app.post('/manticore', async (req, res) => {
         logEntry({
             level: 'info',
             job: 'beasts',
-            message: 'Manticore POST complete',
+            message: `${beast} POST complete`,
         });
 
         res.sendStatus(201);
@@ -378,27 +176,27 @@ app.post('/manticore', async (req, res) => {
         logEntry({
             level: 'error',
             job: 'beasts',
-            message: `Manticore POST error: ${err}`,
+            message: `${beast} POST error: ${err}`,
         });
 
         res.status(500).send(err);
     }
 });
 
-app.delete('/manticore', async (req, res) => {
-    const context = api.context.active();
-    const { traceId } = api.trace.getSpan(context).spanContext();
-
-    logEntry({
-        level: 'info',
-        job: 'beasts',
-        message: `traceId=${traceId} DELETE s/manticore`,
-    });
+// Generic DELETE endpoint
+app.delete('/:beast', async (req, res) => {
+    const beast = req.params.beast;
+    if (!beasts.includes(beast)) {
+        res.status(404).send(`${beast} is not a valid beast`);
+        metricBody.status = "404";
+        responseMetric(metricBody);
+        return;
+    }
 
     let metricBody = {
         labels: {
             method: 'DELETE',
-            beast: 'manticore',
+            beast,
         },
         start: Date.now(),
     };
@@ -414,7 +212,7 @@ app.delete('/manticore', async (req, res) => {
     try {
         await databaseAction({
             method: Database.DELETE,
-            table: 'manticores',
+            table: beast,
             name: req.body.name,
         });
 
@@ -425,7 +223,7 @@ app.delete('/manticore', async (req, res) => {
         logEntry({
             level: 'info',
             job: 'beasts',
-            message: 'Manticore DELETE complete',
+            message: `${beast} DELETE complete`,
         });
 
         res.sendStatus(204);
@@ -438,7 +236,7 @@ app.delete('/manticore', async (req, res) => {
         logEntry({
             level: 'error',
             job: 'beasts',
-            message: `Manticore DELETE error: ${err}`,
+            message: `${beast} DELETE error: ${err}`,
         });
 
         res.status(500).send(err);
@@ -477,8 +275,12 @@ const startServer = async () => {
             job: 'beasts',
             message: 'Creating tables...',
         });
-        await pgClient.query('CREATE TABLE IF NOT EXISTS unicorns(id serial PRIMARY KEY, name VARCHAR (50) UNIQUE NOT NULL);');
-        await pgClient.query('CREATE TABLE IF NOT EXISTS manticores(id serial PRIMARY KEY, name VARCHAR (50) UNIQUE NOT NULL);');
+
+        // Can't use prepared statements with
+        for (const beast of beasts) {
+            console.log(beast);
+            await pgClient.query(`CREATE TABLE IF NOT EXISTS ${beast}(id serial PRIMARY KEY, name VARCHAR (50) UNIQUE NOT NULL);`);
+        }
 
         app.listen(4000);
         logEntry({
@@ -490,7 +292,7 @@ const startServer = async () => {
         logEntry({
             level: 'info',
             job: 'beasts',
-            message: 'Beasts server could not start, trying again in 5 seconds...',
+            message: `Beasts server could not start, trying again in 5 seconds... ${err}`,
         });
         setTimeout(() => startServer(), 5000);
     }

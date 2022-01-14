@@ -1,9 +1,8 @@
-// Include all deps
+// Include all OpenTelemetry dependencies for tracing
 const api = require("@opentelemetry/api");
-const { NodeTracerProvider } = require("@opentelemetry/node");
-const { SimpleSpanProcessor } = require("@opentelemetry/tracing");
-const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { registerInstrumentations } = require('@opentelemetry/instrumentation');
+const { NodeTracerProvider } = require("@opentelemetry/sdk-trace-node");
+const { SimpleSpanProcessor } = require("@opentelemetry/sdk-trace-base");
+const { W3CTraceContextPropagator } = require("@opentelemetry/core");
 const { JaegerExporter } = require('@opentelemetry/exporter-jaeger');
 const { Resource } = require('@opentelemetry/resources');
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
@@ -31,14 +30,24 @@ module.exports = () => {
   provider.addSpanProcessor(processor);
   provider.register();
 
-  // Enable everything that's available
-  registerInstrumentations({
-    instrumentations: [getNodeAutoInstrumentations()],
-  });
+  // Create a new header for propagation from a given span
+  const propagator = new W3CTraceContextPropagator();
+  const createPropagationHeader = (span) => {
+    let carrier = {};
+    // Inject the current trace context into the carrier object
+    propagator.inject(
+        api.trace.setSpanContext(api.ROOT_CONTEXT, span.spanContext()),
+        carrier,
+        api.defaultTextMapSetter
+    );
+    return carrier;
+  };
+
 
   // Return instances of the API and the tracer to the calling app
   return {
     tracer: api.trace.getTracer("test"),
-    api: api
+    api: api,
+    propagator: createPropagationHeader,
   }
 };
