@@ -24,5 +24,5 @@ The demo also outputs some metrics, both in the form of a counter and bucket (`r
 
 Grafana Agent however adds some extra functionality. As it receives incoming spans, it then outputs metrics for the Prometheus instance to scrape. It also auto-generates log lines based on the incoming spans.
 
-There is a very simple APMalike dashboard to show how you can build a dashboard that looks at span metrics and auto-logged entries into a mini 'APM-alike' dashboard.
+There is a very simple APMalike dashboard to show how you can build a dashboard that looks at span metrics and auto-logged entries into a mini 'APM-alike' dashboard. As such, it's worth pointing out there are intentional errors in the code, mostly around Postgres statements, to point out the trace erroring functionality within Grafana.
 
