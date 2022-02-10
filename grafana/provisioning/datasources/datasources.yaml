@@ -29,3 +29,8 @@ datasources:
     access: proxy
     uid: prometheus
     url: http://prometheus:9090
+    jsonData:
+      exemplarTraceIdDestinations:
+        - datasourceUid: tempo
+          name: traceId
+      httpMethod: POST

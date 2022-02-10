@@ -35,7 +35,7 @@ scrape_configs:
         labels:
           group: 'canary'
 
-  - job_name: 'device'
+  - job_name: 'creatures'
     scrape_interval: 5s
 
     static_configs:

@@ -4,6 +4,9 @@ WORKDIR /usr/src/app
 
 COPY package.json /usr/src/app/
 
+RUN apk update && apk upgrade && \
+    apk add --no-cache bash git openssh
+
 RUN npm install --production \
     && npm cache clean --force \
     && rm -rf /tmp/*

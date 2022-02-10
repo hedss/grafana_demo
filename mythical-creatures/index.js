@@ -1,4 +1,4 @@
-require('./tracing')();
+const { api, tracer } = require('./tracing')();
 const promClient = require('prom-client');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -7,8 +7,8 @@ const logEntry = require('./logging');
 
 // Prometheus
 const app = express();
-const collectDefaultMetrics = promClient.collectDefaultMetrics;
 const register = promClient.register;
+register.setContentType(promClient.Registry.OPENMETRICS_CONTENT_TYPE);
 
 // Use JSON parsing in the request body
 app.use(bodyParser.json());
@@ -28,19 +28,13 @@ const beasts = [
     'beholder',
 ];
 
-// Total number of requests made
-const requestCounter = new promClient.Counter({
-    name: 'requests',
-    help: 'Total numer of requests made.',
-    labelNames: ['method', 'status', 'beast'],
-});
-
 // Status response bucket
 const responseBucket = new promClient.Histogram({
-    name: 'request_times',
-    help: 'request_times',
+    name: 'mythical_request_times',
+    help: 'mythical_request_times',
     labelNames: ['method', 'status', 'beast'],
     buckets: [1, 4, 8, 10, 20, 50, 100, 200, 500, 1000],
+    enableExemplars: true,
 });
 
 const databaseAction = async (action) => {
@@ -63,12 +57,21 @@ const databaseAction = async (action) => {
 
 const responseMetric = (details) => {
     const timeMs = Date.now() - details.start;
-    responseBucket.observe(details.labels, timeMs);
+    const spanContext = api.trace.getSpan(api.context.active()).spanContext();
+    responseBucket.observe({
+        labels: details.labels,
+        value: timeMs,
+        exemplarLabels: {
+            traceId: spanContext.traceId,
+            spanID: spanContext.spanId,
+        },
+    });
 };
 
 app.get('/metrics', async (req, res) => {
     res.set('Content-Type', register.contentType);
-    res.send(register.metrics());
+    const metrics = await register.metrics();
+    res.send(await register.metrics());
 });
 
 // Generic GET endpoint
@@ -76,7 +79,7 @@ app.get('/:beast', async (req, res) => {
     const beast = req.params.beast;
     if (!beasts.includes(beast)) {
         res.status(404).send(`${beast} is not a valid beast`);
-        metricBody.status = "404";
+        metricBody.labels.status = "404";
         responseMetric(metricBody);
         console.log("INVALID BEAST!")
         return;
@@ -98,7 +101,7 @@ app.get('/:beast', async (req, res) => {
         });
 
         // Metrics
-        metricBody.status = "200";
+        metricBody.labels.status = "200";
         responseMetric(metricBody);
 
         logEntry({
@@ -109,7 +112,7 @@ app.get('/:beast', async (req, res) => {
 
         res.send(results);
     } catch (err) {
-        metricBody.status = "500";
+        metricBody.labels.status = "500";
         responseMetric(metricBody);
 
         logEntry({
@@ -127,7 +130,7 @@ app.post('/:beast', async (req, res) => {
     const beast = req.params.beast;
     if (!beasts.includes(beast)) {
         res.status(404).send(`${beast} is not a valid beast`);
-        metricBody.status = "404";
+        metricBody.labels.status = "404";
         responseMetric(metricBody);
         return;
     }
@@ -144,7 +147,7 @@ app.post('/:beast', async (req, res) => {
     if (!req.body || !req.body.name) {
         // Here we'd use 'respondToCall()' which would add a metric for the response
         // code
-        metricBody.status = "400";
+        metricBody.labels.status = "400";
         responseMetric(metricBody);
     }
 
@@ -157,7 +160,7 @@ app.post('/:beast', async (req, res) => {
         });
 
         // Metrics
-        metricBody.status = "201";
+        metricBody.labels.status = "201";
         responseMetric(metricBody);
 
         logEntry({
@@ -170,7 +173,7 @@ app.post('/:beast', async (req, res) => {
     } catch (err) {
         // Metrics
         console.log(`error: ${err}`);
-        metricBody.status = "500";
+        metricBody.labels.status = "500";
         responseMetric(metricBody);
 
         logEntry({
@@ -188,7 +191,7 @@ app.delete('/:beast', async (req, res) => {
     const beast = req.params.beast;
     if (!beasts.includes(beast)) {
         res.status(404).send(`${beast} is not a valid beast`);
-        metricBody.status = "404";
+        metricBody.labels.status = "404";
         responseMetric(metricBody);
         return;
     }
@@ -204,7 +207,7 @@ app.delete('/:beast', async (req, res) => {
     if (!req.body || !req.body.name) {
         // Here we'd use 'respondToCall()' which would add a metric for the response
         // code
-        metricBody.status = "400";
+        metricBody.labels.status = "400";
         responseMetric(metricBody);
     }
 
@@ -217,7 +220,7 @@ app.delete('/:beast', async (req, res) => {
         });
 
         // Metrics
-        metricBody.status = "204";
+        metricBody.labels.status = "204";
         responseMetric(metricBody);
 
         logEntry({
@@ -230,7 +233,7 @@ app.delete('/:beast', async (req, res) => {
     } catch (err) {
         // Metrics
         console.log(`error: ${err}`);
-        metricBody.status = "500";
+        metricBody.labels.status = "500";
         responseMetric(metricBody);
 
         logEntry({
