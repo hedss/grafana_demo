@@ -21,10 +21,244 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 1,
   "links": [],
   "liveNow": false,
   "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 57,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 7,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Latency charts",
+              "url": "http://localhost:3000/explore?orgId=1&left=[\"now-1h\",\"now\",\"Prometheus\",{\"refId\":\"A\",\"instant\":true,\"range\":true,\"exemplar\":true,\"expr\":\"topk(10, sum by (http_method,http_target)(increase(traces_spanmetrics_latency_sum{http_method!=\\\"\\\", http_target!=\\\"\\\"}[1m]) / increase(traces_spanmetrics_latency_count{http_method!=\\\"\\\", http_target!=\\\"\\\"}[1m])))\"}]&right=\n[\"now-1h\",\"now\",\"Tempo\",{\"refId\":\"A\",\"instant\":true,\"range\":true,\"exemplar\":true,\"queryType\":\"nativeSearch\",\"search\":\"http.target=${__field.labels.http_target} http.method=${__field.labels.http_method}\"}]"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "exemplar": true,
+          "expr": "sum by (http_target)(rate(traces_spanmetrics_latency_sum{http_target=~\".+\"}[1m]) / rate(traces_spanmetrics_latency_count{http_target=~\".+\"}[1m])) * 55",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 13,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "8.3.6",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "exemplar": true,
+          "expr": "(sum(increase(traces_spanmetrics_calls_total{status_code=\"STATUS_CODE_ERROR\"}[1m]))/sum(increase(traces_spanmetrics_calls_total[1m]))) * 100",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Overall Error %age",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Error traces for ${__field.labels.http_target}",
+              "url": "http://localhost:3000/explore?orgId=1&left=\n[\"now-1h\",\"now\",\"Tempo\",{\"refId\":\"A\",\"instant\":true,\"range\":true,\"exemplar\":true,\"queryType\":\"nativeSearch\",\"search\":\"http.target=${__field.labels.http_target} status.code=2\"}]"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 4
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 4
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.3.6",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "exemplar": true,
+          "expr": "(sum by (http_target)(increase(traces_spanmetrics_calls_total{status_code=\"STATUS_CODE_ERROR\",http_target=~\"\\\\/\\\\w+\"}[1m])))/(sum by (http_target)(increase(traces_spanmetrics_calls_total{status_code!=\"\",http_target!=\"\\\\/\\\\w+\"}[1m]))) * 100",
+          "interval": "",
+          "legendFormat": "{{http_target}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Error Percentages by Target",
+      "type": "stat"
+    },
     {
       "datasource": {
         "type": "prometheus",
@@ -44,7 +278,7 @@
           "links": [
             {
               "targetBlank": true,
-              "title": "Trace Diagram",
+              "title": "${__data.fields[\"HTTP Method\"]} ${__data.fields.Endpoint} traces",
               "url": "http://localhost:3000/explore?orgId=1&left=\n[\"now-1h\",\"now\",\"Tempo\",{\"refId\":\"A\",\"instant\":true,\"range\":true,\"exemplar\":true,\"queryType\":\"nativeSearch\",\"search\":\"http.target=${__data.fields.Endpoint} http.method=${__data.fields[\"HTTP Method\"]}\"}]"
             }
           ],
@@ -82,7 +316,7 @@
         "h": 12,
         "w": 11,
         "x": 0,
-        "y": 0
+        "y": 11
       },
       "id": 2,
       "links": [],
@@ -103,7 +337,7 @@
           }
         ]
       },
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "8.3.6",
       "targets": [
         {
           "datasource": {
@@ -119,7 +353,7 @@
           "refId": "A"
         }
       ],
-      "title": "Endpoint Latencies in ms  (Last minute)",
+      "title": "Top 10 Highest Endpoint Latencies Over Last Minute",
       "transformations": [
         {
           "id": "filterFieldsByName",
@@ -127,8 +361,7 @@
             "include": {
               "names": [
                 "http_method",
-                "http_target",
-                "Value #A"
+                "http_target"
               ]
             }
           }
@@ -136,7 +369,9 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": {},
+            "excludeByName": {
+              "Value": false
+            },
             "indexByName": {},
             "renameByName": {
               "Value #A": "Average Latency",
@@ -218,7 +453,7 @@
         "h": 12,
         "w": 13,
         "x": 11,
-        "y": 0
+        "y": 11
       },
       "id": 4,
       "options": {
@@ -309,7 +544,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 23
       },
       "id": 8,
       "options": {
@@ -347,7 +582,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 33
       },
       "id": 6,
       "options": {
@@ -388,7 +623,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Simple APM",
-  "uid": "OhfjIj17z",
-  "version": 2,
+  "uid": "4VSk5Lank",
+  "version": 1,
   "weekStart": ""
 }
