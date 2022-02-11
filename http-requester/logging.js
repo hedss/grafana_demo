@@ -10,6 +10,13 @@ const logEntry = async (details) => {
     // Create a new span
     const logSpan = tracer.startSpan("log_to_loki");
     let error = false;
+    let stream = {
+        'level': level,
+        'job': job,
+    };
+    if (details.creature) {
+        stream['creature'] = details.creature;
+    }
 
     try {
         await request(
@@ -23,10 +30,7 @@ const logEntry = async (details) => {
                 body: {
                     'streams': [
                         {
-                            'stream': {
-                                'level': level,
-                                'job': job,
-                            },
+                            'stream': stream,
                             'values': [
                                 [ `${Date.now() * 1000000}`, message ]
                             ]

@@ -32,5 +32,9 @@ traces:
       roots: true
       processes: false
       spans: false
+      span_attributes:
+        - http.method
+        - http.target
+        - http.status_code
       overrides:
         trace_id_key: "traceId"

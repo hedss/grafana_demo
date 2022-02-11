@@ -9,7 +9,7 @@ datasources:
     jsonData:
       derivedFields:
         - datasourceUid: tempo
-          matcherRegex: "^.*?traceId=(\\w+).*$"
+          matcherRegex: "^.*?traceI[d|D]=(\\w+).*$"
           name: traceId
           url: '$${__value.raw}'
 
@@ -23,6 +23,10 @@ datasources:
         enabled: true
       tracesToLogs:
         datasourceUid: loki
+        filterByTraceID: false
+        spanEndTimeShift: "500ms"
+        spanStartTimeShift: "-500ms"
+        tags: ['creature']
 
   - name: Prometheus
     type: prometheus

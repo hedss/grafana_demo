@@ -22,19 +22,14 @@ const makeRequest = async () => {
 
     // Create a new span
     const requestSpan = tracer.startSpan("requester");
-    requestSpan.setAttribute('creature.type', beast);
+    requestSpan.setAttribute('creature', beast);
     const { traceId } = requestSpan.spanContext();
 
     // Create a new context for this request
     api.context.with(api.trace.setSpan(api.context.active(), requestSpan), async () => {
+        const start = Date.now();
         // Add the headers required for trace propagation
         headers = propagator(requestSpan);
-
-        logEntry({
-            level: 'info',
-            job: 'requester',
-            message: `traceID=${traceId} make request for: ${type} /${beast}`,
-        });
 
         if (type === 'GET') {
             try {
@@ -46,7 +41,8 @@ const makeRequest = async () => {
                 logEntry({
                     level: 'info',
                     job: 'requester',
-                    message: `traceID=${traceId} Beast names retrieved for ${beast}`,
+                    creature: beast,
+                    message: `traceID=${traceId} request="GET /${beast}" status=SUCCESS`,
                 });
                 const names = JSON.parse(result);
 
@@ -64,7 +60,8 @@ const makeRequest = async () => {
                         logEntry({
                             level: 'info',
                             job: 'requester',
-                            message: `traceID=${traceId} Beast name ${names[0].name} deleted for ${beast}`,
+                            creature: beast,
+                            message: `traceID=${traceId} request="DELETE /${beast}/${names[0].name}" status=SUCCESS`,
                         });
                     }
                 }
@@ -72,7 +69,8 @@ const makeRequest = async () => {
                 logEntry({
                     level: 'error',
                     job: 'requester',
-                    message: `traceID=${traceId} Error in request to mythical beasts server: ${err}`,
+                    creature: beast,
+                    message: `traceID=${traceId} request="DELETE /${beast}/${names[0].name}" status=FAILURE error="${err}"`,
                 });
                 console.log('Requester error');
                 error = true;
@@ -93,18 +91,28 @@ const makeRequest = async () => {
                 logEntry({
                     level: 'info',
                     job: 'requester',
-                    message: `traceID=${traceId} Beast name pushed for ${beast}`,
+                    creature: beast,
+                    message: `traceID=${traceId} request="POST /${beast}" status=SUCCESS`,
                 });
             } catch (err) {
                 logEntry({
                     level: 'error',
                     job: 'requester',
-                    message: `traceID=${traceId}  Error in request to mythical beasts server: ${err}`,
+                    creature: beast,
+                    message: `traceID=${traceId} request="POST /${beast}" status=FAILURE error="${err}"`,
                 });
                 console.log('Requester error');
                 error = true;
             }
+
         }
+        logEntry({
+            level: 'info',
+            job: 'requester',
+            creature: beast,
+            message: `traceID=${traceId} method=${type} target=/${beast} duration=${Date.now() - start}ms`,
+        });
+
         // Set the status code as OK and end the span
         requestSpan.setStatus({ code: (!error) ? api.SpanStatusCode.OK : api.SpanStatusCode.ERROR });
         requestSpan.end();
