@@ -6,7 +6,7 @@ const logEntry = async (details) => {
     try {
         await request(
             {
-                uri: "http://loki:3100/loki/api/v1/push",
+                uri: process.env.LOGS_TARGET,
                 method: 'POST',
                 headers: {
                     'Content-type': 'application/json'

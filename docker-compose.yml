@@ -4,19 +4,29 @@ volumes:
   mythical:
   postgres:
 services:
-  creatures:
-    build: ./mythical-creatures
+  mythical-beasts-server:
+    build: ./mythical-beasts-server
     ports:
       - "4000:4000"
       - "80:80"
     volumes:
       - "mythical:/mythical"
     depends_on:
-      - postgres
-  requester:
-    build: ./http-requester
+      - mythical-beasts-database
+    environment:
+        - NAMESPACE=production
+        - LOGS_TARGET=http://loki:3100/loki/api/v1/push
+        - TRACING_COLLECTOR_HOST=agent
+        - TRACING_COLLECTOR_PORT=6832
+  mythical-beasts-requester:
+    build: ./mythical-beasts-requester
     depends_on:
-      - creatures
+      - mythical-beasts-server
+    environment:
+        - NAMESPACE=production
+        - LOGS_TARGET=http://loki:3100/loki/api/v1/push
+        - TRACING_COLLECTOR_HOST=agent
+        - TRACING_COLLECTOR_PORT=6832
   prometheus:
     build: ./prometheus
     ports:
@@ -34,7 +44,7 @@ services:
     image: grafana/loki
     ports:
       - "3100:3100"
-  postgres:
+  mythical-beasts-database:
     image: postgres
     restart: always
     environment:

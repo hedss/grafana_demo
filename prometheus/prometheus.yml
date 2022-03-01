@@ -21,28 +21,13 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'example-random'
-
-    # Override the global default and scrape targets from this job every 5 seconds.
-    scrape_interval: 5s
-
-    static_configs:
-      - targets: ['promexample:8080', 'promexample:8081']
-        labels:
-          group: 'production'
-
-      - targets: ['promexample:8082']
-        labels:
-          group: 'canary'
-
   - job_name: 'creatures'
     scrape_interval: 5s
 
     static_configs:
-      - targets: ['creatures:4000']
+      - targets: ['mythical-beasts-server:4000']
         labels:
           group: 'mythical-1'
-
 
   - job_name: 'node'
     scrape_interval: 5s

@@ -11,8 +11,8 @@ const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventi
 module.exports = () => {
   const options = {
     tags: [],
-    host: 'agent',
-    port: 6832,
+    host: process.env.TRACING_COLLECTOR_HOST,
+    port: process.env.TRACING_COLLECTOR_PORT,
     maxPacketSize: 65000
   }
 
@@ -38,7 +38,7 @@ module.exports = () => {
 
   // Return instances of the API and the tracer to the calling app
   return {
-    tracer: api.trace.getTracer("test"),
+    tracer: api.trace.getTracer("mythical-server"),
     api: api
   }
 };

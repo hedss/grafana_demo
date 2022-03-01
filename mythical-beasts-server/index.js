@@ -49,7 +49,7 @@ const databaseAction = async (action) => {
 
     logEntry({
         level: 'error',
-        job: 'beasts',
+        job: `${process.env.NAMESPACE}/mythical-beasts-server`,
         message: 'Method was not valid, throwing error',
     });
     throw new Error('Not a valid creature method!')
@@ -106,7 +106,7 @@ app.get('/:beast', async (req, res) => {
 
         logEntry({
             level: 'info',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: `${beast} GET complete`,
         });
 
@@ -117,7 +117,7 @@ app.get('/:beast', async (req, res) => {
 
         logEntry({
             level: 'error',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: `${beast} GET error: ${err}`,
         });
 
@@ -165,7 +165,7 @@ app.post('/:beast', async (req, res) => {
 
         logEntry({
             level: 'info',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: `${beast} POST complete`,
         });
 
@@ -178,7 +178,7 @@ app.post('/:beast', async (req, res) => {
 
         logEntry({
             level: 'error',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: `${beast} POST error: ${err}`,
         });
 
@@ -225,7 +225,7 @@ app.delete('/:beast', async (req, res) => {
 
         logEntry({
             level: 'info',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: `${beast} DELETE complete`,
         });
 
@@ -238,7 +238,7 @@ app.delete('/:beast', async (req, res) => {
 
         logEntry({
             level: 'error',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: `${beast} DELETE error: ${err}`,
         });
 
@@ -251,11 +251,11 @@ const startServer = async () => {
     try {
         logEntry({
             level: 'info',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: 'Installing postgres client...',
         });
         pgClient = new Client({
-            host: 'postgres',
+            host: 'mythical-beasts-database',
             port: 5432,
             user: 'postgres',
             password: 'mythical',
@@ -266,7 +266,7 @@ const startServer = async () => {
         if (results.rows[0].exists === false) {
             logEntry({
                 level: 'info',
-                job: 'beasts',
+                job: `${process.env.NAMESPACE}/mythical-beasts-server`,
                 message: 'Database entry did not exist, creating...',
             });
             console.log('Creating database...');
@@ -275,7 +275,7 @@ const startServer = async () => {
 
         logEntry({
             level: 'info',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: 'Creating tables...',
         });
 
@@ -288,13 +288,13 @@ const startServer = async () => {
         app.listen(4000);
         logEntry({
             level: 'info',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: 'Beasts server up and running...',
         });
     } catch (err) {
         logEntry({
             level: 'info',
-            job: 'beasts',
+            job: `${process.env.NAMESPACE}/mythical-beasts-server`,
             message: `Beasts server could not start, trying again in 5 seconds... ${err}`,
         });
         setTimeout(() => startServer(), 5000);
