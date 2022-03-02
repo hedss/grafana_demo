@@ -1,4 +1,4 @@
-const { api, tracer } = require('./tracing')();
+const { api } = require('./tracing')('server', 'mythical-server');
 const promClient = require('prom-client');
 const express = require('express');
 const bodyParser = require('body-parser');

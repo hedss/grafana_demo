@@ -1,4 +1,4 @@
-const tracingUtils = require('./tracing')();
+const tracingUtils = require('./tracing')('requester', 'mythical-requester');
 const { api, tracer, propagator } = tracingUtils;
 const request = require('request-promise-native');
 const { uniqueNamesGenerator, adjectives, colors } = require('unique-names-generator');

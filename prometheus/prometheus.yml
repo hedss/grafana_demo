@@ -22,7 +22,7 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   - job_name: 'creatures'
-    scrape_interval: 5s
+    scrape_interval: 2s
 
     static_configs:
       - targets: ['mythical-beasts-server:4000']
@@ -38,7 +38,7 @@ scrape_configs:
           group: 'mythical-1'
 
   - job_name: 'span-metrics'
-    scrape_interval: 5s
+    scrape_interval: 2s
     static_configs:
       - targets: ['agent:1234']
         labels:

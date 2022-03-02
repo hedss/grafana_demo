@@ -38,3 +38,4 @@ datasources:
         - datasourceUid: tempo
           name: traceId
       httpMethod: POST
+      timeInterval: "2s"

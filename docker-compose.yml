@@ -5,7 +5,11 @@ volumes:
   postgres:
 services:
   mythical-beasts-server:
-    build: ./mythical-beasts-server
+    build:
+      context: ./source
+      dockerfile: docker/Dockerfile
+      args:
+        SERVICE: mythical-beasts-server
     ports:
       - "4000:4000"
       - "80:80"
@@ -19,14 +23,18 @@ services:
         - TRACING_COLLECTOR_HOST=agent
         - TRACING_COLLECTOR_PORT=6832
   mythical-beasts-requester:
-    build: ./mythical-beasts-requester
+    build:
+      context: ./source
+      dockerfile: docker/Dockerfile
+      args:
+        SERVICE: mythical-beasts-requester
     depends_on:
       - mythical-beasts-server
     environment:
-        - NAMESPACE=production
-        - LOGS_TARGET=http://loki:3100/loki/api/v1/push
-        - TRACING_COLLECTOR_HOST=agent
-        - TRACING_COLLECTOR_PORT=6832
+      - NAMESPACE=production
+      - LOGS_TARGET=http://loki:3100/loki/api/v1/push
+      - TRACING_COLLECTOR_HOST=agent
+      - TRACING_COLLECTOR_PORT=6832
   prometheus:
     build: ./prometheus
     ports:
