@@ -21,11 +21,11 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'creatures'
+  - job_name: 'endpoints'
     scrape_interval: 2s
 
     static_configs:
-      - targets: ['mythical-beasts-server:4000']
+      - targets: ['mythical-server:4000']
         labels:
           group: 'mythical-1'
 
