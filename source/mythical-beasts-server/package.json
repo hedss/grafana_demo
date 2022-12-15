@@ -20,7 +20,7 @@
     "@opentelemetry/sdk-trace-node": "^1.0.1",
     "@opentelemetry/semantic-conventions": "^1.0.1",
     "body-parser": "^1.19.1",
-    "express": "^4.17.2",
+    "express": "^4.17.3",
     "influx": "^5.9.2",
     "pg": "^8.7.1",
     "prom-client": "github:voltbit/prom-client#add-openmetrics-support",
