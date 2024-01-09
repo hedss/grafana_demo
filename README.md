@@ -1,3 +1,11 @@
+# ⛔️ DEPRECATED
+
+"Time flies like an arrow; fruit flies like a banana." - *Anonymous*
+
+I was reminded about this repo today, because it was pointed out to me that, weirdly, I seem to have the top (and probably only relevant) hit in Google for the term `APMalike`. Did I unknowingly coin it? I thought I had heard it somewhere before and was echoing it, but maybe I dreamt it? I have no idea, anymore.
+
+What I can tell you is that this repository is most definitely deprecated, and instead you should go and look at the [Introduction to Metrics, Logs, Traces and Profiles in Grafana](https://github.com/grafana/intro-to-mltp/) repository instead, which is essentially a fork of this that is kept up-to-date and actually might be interesting to you!
+
 # grafana_demo
 
 This is built on top of a demo I gave as part of my original interview at Grafana Labs.
